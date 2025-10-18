@@ -36,8 +36,36 @@ serve(async (req) => {
   try {
     const { messages, figure } = await req.json();
     
+    // Input validation
     if (!messages || !Array.isArray(messages)) {
-      throw new Error("Messages array is required");
+      return new Response(
+        JSON.stringify({ error: "Invalid request: messages must be an array" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Limit conversation history to prevent memory issues
+    if (messages.length > 50) {
+      return new Response(
+        JSON.stringify({ error: "Conversation too long. Maximum 50 messages allowed." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Validate message content length
+    for (const msg of messages) {
+      if (!msg.content || typeof msg.content !== 'string') {
+        return new Response(
+          JSON.stringify({ error: "Invalid message format" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (msg.content.length > 5000) {
+        return new Response(
+          JSON.stringify({ error: "Message too long. Maximum 5000 characters per message." }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     const selectedFigure = historicalFigures[figure as keyof typeof historicalFigures] || historicalFigures.jesus;

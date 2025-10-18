@@ -13,7 +13,23 @@ export const useHistoricalChat = (figureId: string) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const sendMessage = async (userMessage: string) => {
-    const newUserMessage: Message = { role: "user", content: userMessage };
+    // Client-side input validation
+    if (!userMessage || userMessage.trim().length === 0) {
+      toast.error("A mensagem não pode estar vazia");
+      return;
+    }
+    
+    if (userMessage.length > 5000) {
+      toast.error("Mensagem muito longa. Máximo de 5000 caracteres.");
+      return;
+    }
+    
+    if (messages.length >= 50) {
+      toast.error("Conversa muito longa. Inicie uma nova conversa.");
+      return;
+    }
+    
+    const newUserMessage: Message = { role: "user", content: userMessage.trim() };
     setMessages((prev) => [...prev, newUserMessage]);
     setIsLoading(true);
 
@@ -38,9 +54,12 @@ export const useHistoricalChat = (figureId: string) => {
           toast.error("Limite de requisições excedido. Aguarde um momento.");
         } else if (response.status === 402) {
           toast.error("Créditos insuficientes. Entre em contato com o suporte.");
+        } else if (response.status === 400) {
+          toast.error(errorData?.error || "Requisição inválida");
         } else {
-          toast.error(errorData?.error || "Erro ao conectar com o servidor");
+          toast.error("Erro ao conectar com o servidor");
         }
+        setMessages((prev) => prev.slice(0, -1)); // Remove the failed message
         setIsLoading(false);
         return;
       }
